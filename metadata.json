@@ -1,0 +1,6 @@
+{
+  "name": "JobsHub Official",
+  "description": "Official professional job portal for exploring vacancies, government & private job listings, and online job applications.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
