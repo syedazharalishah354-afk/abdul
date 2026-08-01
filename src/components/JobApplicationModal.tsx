@@ -192,13 +192,13 @@ export const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
   };
 
   // Handle clicking "Submit Application" on Step 2
-  const handleFinalSubmit = (e: React.FormEvent) => {
+  const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep2()) return;
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
+    try {
       const trackingId = `JH-2026-${Math.floor(10000 + Math.random() * 90000)}`;
       const appliedDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
@@ -206,8 +206,8 @@ export const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
         day: 'numeric',
       });
 
-      // Save ONE complete application record to shared dataStore for Admin Portal
-      const createdRecord = addApplication({
+      // Save ONE complete application record to shared dataStore for Admin Portal (and Supabase)
+      const createdRecord = await addApplication({
         trackingId,
         jobId: job.id,
         jobTitle: job.title,
@@ -247,7 +247,10 @@ export const JobApplicationModal: React.FC<JobApplicationModalProps> = ({
       setCompletedReceipt(receipt);
       setIsSubmitting(false);
       onSubmissionSuccess(receipt);
-    }, 1200);
+    } catch (err) {
+      console.error('Error submitting application:', err);
+      setIsSubmitting(false);
+    }
   };
 
   const handleCopyTracking = () => {

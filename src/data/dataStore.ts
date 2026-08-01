@@ -1,19 +1,24 @@
 import { Job, ApplicationRecord, ApplicationStatus, SiteSettings } from '../types';
 import { MOCK_JOBS } from './mockJobs';
+import { supabase, isSupabaseConfigured, uploadImageToSupabaseStorage } from '../lib/supabase';
 
 const JOBS_STORAGE_KEY = 'jobshub_jobs_v2';
 const APPS_STORAGE_KEY = 'jobshub_applications_v2';
 const ADMIN_SESSION_KEY = 'jobshub_admin_session_v1';
 const SETTINGS_STORAGE_KEY = 'jobshub_site_settings_v1';
+const ADMIN_CREDS_STORAGE_KEY = 'jobshub_admin_creds_v3';
+
+const DEFAULT_ADMIN_USERNAME = 'umar';
+const DEFAULT_ADMIN_PASSWORD = 'Sho2026@';
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
-  websiteName: 'jobshubofficial',
+  websiteName: 'JobsHub Official',
   whatsappNumber: '03477957267',
-  jazzCashAccountName: 'Muhammad Amir',
-  jazzCashAccountNumber: '03247459091',
-  easyPaisaAccountName: 'Muhammad Shajehan',
-  easyPaisaAccountNumber: '03471713065',
-  applicationFee: 500,
+  jazzCashAccountName: 'JobsHub Official Portal',
+  jazzCashAccountNumber: '0300-1234567',
+  easyPaisaAccountName: 'JobsHub Official Portal',
+  easyPaisaAccountNumber: '0312-9876543',
+  applicationFee: 499,
 };
 
 // Sample CNIC and document mock images for realistic initial applications
@@ -67,126 +72,154 @@ const INITIAL_APPLICATIONS: ApplicationRecord[] = [
     cnicBackPreview: SAMPLE_CNIC_BACK,
     paymentProofPreview: SAMPLE_PAYMENT_PROOF,
     adminNotes: 'Candidate passed technical screening. Approved for final interview call.'
-  },
-  {
-    id: 'app-1003',
-    trackingId: 'JH-2026-77310',
-    jobId: 'jh-private-1001',
-    jobTitle: 'Operations Manager',
-    department: 'Interloop Corporate Services Ltd.',
-    category: 'Private Jobs',
-    categorySlug: 'private',
-    applicantName: 'Zubair Ahmed Chaudhry',
-    fatherName: 'Muhammad Bashir Chaudhry',
-    cnic: '38403-1192843-9',
-    email: 'zubair.chaudhry@outlook.com',
-    mobileNumber: '0333-4129853',
-    qualification: 'Master (MS/MA)',
-    address: 'Sector G-11/2, Street 4, Islamabad',
-    postalCode: '44000',
-    appliedDate: '2026-07-25',
-    status: 'Pending',
-    cnicFrontPreview: SAMPLE_CNIC_FRONT,
-    cnicBackPreview: SAMPLE_CNIC_BACK,
-    paymentProofPreview: SAMPLE_PAYMENT_PROOF
-  },
-  {
-    id: 'app-1004',
-    trackingId: 'JH-2026-12948',
-    jobId: 'jh-hospital-1001',
-    jobTitle: 'Charge Nurse (BPS-16)',
-    department: 'Mayo Hospital Lahore',
-    category: 'Hospital Jobs',
-    categorySlug: 'hospital',
-    applicantName: 'Ayesha Bibi',
-    fatherName: 'Allah Ditta',
-    cnic: '35102-8823910-2',
-    email: 'ayesha.nurse@gmail.com',
-    mobileNumber: '0302-9912834',
-    qualification: 'Bachelor (BS/BA)',
-    address: 'Mughalpura Post Office Street, Lahore',
-    postalCode: '54840',
-    appliedDate: '2026-07-26',
-    status: 'Approved',
-    cnicFrontPreview: SAMPLE_CNIC_FRONT,
-    cnicBackPreview: SAMPLE_CNIC_BACK,
-    adminNotes: 'PNC Nursing Registration Certificate Verified.'
-  },
-  {
-    id: 'app-1005',
-    trackingId: 'JH-2026-66381',
-    jobId: 'jh-suthra-punjab-1001',
-    jobTitle: 'Zone Sanitation Officer',
-    department: 'Chief Minister Suthra Punjab Program',
-    category: 'Suthra Punjab / Cleaning Jobs',
-    categorySlug: 'suthra-punjab',
-    applicantName: 'Bilal Hassan Bhatti',
-    fatherName: 'Hassan Akhtar Bhatti',
-    cnic: '34101-5528391-7',
-    email: 'bilal.bhatti@yahoo.com',
-    mobileNumber: '0321-7712390',
-    qualification: 'Bachelor (BS/BA)',
-    address: 'Model Town Block Q, Gujranwala',
-    postalCode: '52250',
-    appliedDate: '2026-07-27',
-    status: 'Rejected',
-    cnicFrontPreview: SAMPLE_CNIC_FRONT,
-    cnicBackPreview: SAMPLE_CNIC_BACK,
-    rejectionReason: 'Age limit exceeded as per department recruitment rules.'
-  },
-  {
-    id: 'app-1006',
-    trackingId: 'JH-2026-30492',
-    jobId: 'jh-army-1001',
-    jobTitle: 'PMA Long Course Officer Cadet',
-    department: 'Pakistan Army GHQ Rawalpindi',
-    category: 'Army Jobs',
-    categorySlug: 'army',
-    applicantName: 'Usman Ghani',
-    fatherName: 'Major (R) Ghani ur Rehman',
-    cnic: '37405-2291823-3',
-    email: 'usman.ghani@army.pk',
-    mobileNumber: '0301-5129847',
-    qualification: 'Intermediate / FSc',
-    address: 'Lalkurti Cantonment, Rawalpindi',
-    postalCode: '46000',
-    appliedDate: '2026-07-30',
-    status: 'Pending',
-    cnicFrontPreview: SAMPLE_CNIC_FRONT,
-    cnicBackPreview: SAMPLE_CNIC_BACK,
-    paymentProofPreview: SAMPLE_PAYMENT_PROOF
-  },
-  {
-    id: 'app-1007',
-    trackingId: 'JH-2026-88120',
-    jobId: 'jh-banking-1001',
-    jobTitle: 'Branch Manager',
-    department: 'National Bank of Pakistan (NBP)',
-    category: 'Banking Jobs',
-    categorySlug: 'banking',
-    applicantName: 'Sana Malik',
-    fatherName: 'Tariq Malik',
-    cnic: '42101-9982310-6',
-    email: 'sana.malik@nbp.com.pk',
-    mobileNumber: '0332-9182345',
-    qualification: 'Master (MS/MA)',
-    address: 'Clifton Block 5, Karachi',
-    postalCode: '75600',
-    appliedDate: '2026-07-31',
-    status: 'Under Review',
-    cnicFrontPreview: SAMPLE_CNIC_FRONT,
-    cnicBackPreview: SAMPLE_CNIC_BACK
   }
 ];
 
 // Helper to notify all subscribers across components of data updates
-function notifyDataChanged() {
+export function notifyDataChanged() {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('jobshub_data_updated'));
   }
 }
 
-// --- JOBS DATA STORE ---
+// --- SUPABASE DATA MAPPER HELPERS ---
+
+function mapDbJobToJob(row: any): Job {
+  return {
+    id: String(row.id),
+    title: row.title || '',
+    department: row.department || row.company_name || '',
+    companyLogo: row.company_logo || 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=120&q=80',
+    sector: row.sector || 'Government',
+    jobType: row.job_type || 'Full Time',
+    location: row.location || 'Pakistan',
+    city: row.city || 'Islamabad',
+    salaryRange: row.salary_range || row.salary || 'Rs. 75,000 - 120,000',
+    minSalary: Number(row.min_salary) || 75000,
+    experience: row.experience || '1 - 3 Years',
+    qualification: row.qualification || 'Bachelor (BS/BA)',
+    vacancies: Number(row.vacancies || row.available_seats) || 10,
+    availableSeats: Number(row.available_seats || row.vacancies) || 10,
+    postedDate: row.posted_date || new Date().toISOString().split('T')[0],
+    deadline: row.deadline || row.application_deadline || '',
+    isFeatured: Boolean(row.is_featured),
+    isUrgent: Boolean(row.is_urgent),
+    isVerified: row.is_verified !== undefined ? Boolean(row.is_verified) : true,
+    category: row.category || 'General',
+    categorySlug: row.category_slug || 'general',
+    description: row.description || '',
+    responsibilities: Array.isArray(row.responsibilities) ? row.responsibilities : [],
+    requirements: Array.isArray(row.requirements) ? row.requirements : [],
+    benefits: Array.isArray(row.benefits) ? row.benefits : [],
+    howToApply: row.how_to_apply || 'Apply online through JobsHub Official Portal.',
+    contactEmail: row.contact_email || 'info@jobshub.pk',
+    contactPhone: row.contact_phone || '+92-51-111-562-748',
+    address: row.address || 'JobsHub Recruitment HQ, Blue Area, Islamabad',
+  };
+}
+
+function mapJobToDbRow(job: Partial<Job>): any {
+  return {
+    title: job.title,
+    department: job.department,
+    company_name: job.department || 'JobsHub Official',
+    company_logo: job.companyLogo,
+    sector: job.sector,
+    job_type: job.jobType,
+    location: job.location,
+    city: job.city,
+    salary: job.salaryRange,
+    salary_range: job.salaryRange,
+    min_salary: job.minSalary,
+    experience: job.experience,
+    qualification: job.qualification,
+    vacancies: job.vacancies || job.availableSeats || 10,
+    available_seats: job.availableSeats || job.vacancies || 10,
+    posted_date: job.postedDate,
+    deadline: job.deadline,
+    application_deadline: job.deadline,
+    is_featured: job.isFeatured || false,
+    is_urgent: job.isUrgent || false,
+    is_verified: job.isVerified !== undefined ? job.isVerified : true,
+    category: job.category,
+    category_slug: job.categorySlug,
+    description: job.description,
+    responsibilities: job.responsibilities || [],
+    requirements: job.requirements || [],
+    benefits: job.benefits || [],
+    how_to_apply: job.howToApply || '',
+    contact_email: job.contactEmail || '',
+    contact_phone: job.contactPhone || '',
+    address: job.address || '',
+  };
+}
+
+function mapDbAppToApp(row: any): ApplicationRecord {
+  return {
+    id: String(row.id),
+    trackingId: row.tracking_id || row.application_id || String(row.id),
+    jobId: String(row.job_id || ''),
+    jobTitle: row.job_title || '',
+    department: row.department || '',
+    category: row.category || '',
+    categorySlug: row.category_slug || '',
+    applicantName: row.applicant_name || row.full_name || '',
+    fatherName: row.father_name || '',
+    cnic: row.cnic || '',
+    email: row.email || '',
+    mobileNumber: row.mobile_number || row.mobile || '',
+    qualification: row.qualification || 'Bachelor (BS/BA)',
+    address: row.address || '',
+    postalCode: row.postal_code || '',
+    appliedDate: row.applied_date || new Date().toISOString().split('T')[0],
+    status: row.status || row.application_status || 'Pending',
+    cnicFrontPreview: row.cnic_front_preview || row.cnic_front_url || undefined,
+    cnicBackPreview: row.cnic_back_preview || row.cnic_back_url || undefined,
+    paymentProofPreview: row.payment_proof_preview || row.payment_screenshot_url || undefined,
+    resumeFileName: row.resume_file_name || undefined,
+    coverNote: row.cover_note || undefined,
+    rejectionReason: row.rejection_reason || undefined,
+    adminNotes: row.admin_notes || undefined,
+  };
+}
+
+function mapAppToDbRow(app: Partial<ApplicationRecord>): any {
+  return {
+    tracking_id: app.trackingId,
+    application_id: app.trackingId,
+    job_id: app.jobId,
+    job_title: app.jobTitle,
+    department: app.department,
+    category: app.category,
+    category_slug: app.categorySlug,
+    applicant_name: app.applicantName,
+    full_name: app.applicantName,
+    father_name: app.fatherName,
+    cnic: app.cnic,
+    email: app.email,
+    mobile_number: app.mobileNumber,
+    mobile: app.mobileNumber,
+    qualification: app.qualification,
+    address: app.address,
+    postal_code: app.postalCode,
+    applied_date: app.appliedDate,
+    status: app.status || 'Pending',
+    application_status: app.status || 'Pending',
+    cnic_front_preview: app.cnicFrontPreview || null,
+    cnic_front_url: app.cnicFrontPreview || null,
+    cnic_back_preview: app.cnicBackPreview || null,
+    cnic_back_url: app.cnicBackPreview || null,
+    payment_proof_preview: app.paymentProofPreview || null,
+    payment_screenshot_url: app.paymentProofPreview || null,
+    resume_file_name: app.resumeFileName || null,
+    cover_note: app.coverNote || null,
+    rejection_reason: app.rejectionReason || null,
+    admin_notes: app.adminNotes || null,
+  };
+}
+
+// --- JOBS STORE ---
+
 export function getStoredJobs(): Job[] {
   if (typeof window === 'undefined') return MOCK_JOBS;
   try {
@@ -200,12 +233,11 @@ export function getStoredJobs(): Job[] {
   } catch (err) {
     console.error('Error loading jobs from localStorage:', err);
   }
-  // Initialize with MOCK_JOBS if missing
   localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(MOCK_JOBS));
   return MOCK_JOBS;
 }
 
-export function saveJobs(jobs: Job[]): void {
+export function saveJobsLocally(jobs: Job[]): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(jobs));
@@ -215,31 +247,108 @@ export function saveJobs(jobs: Job[]): void {
   }
 }
 
-export function addJob(jobData: Omit<Job, 'id'>): Job {
+// Track if Supabase schema tables need creation
+export let isSupabaseSchemaMissing = false;
+
+export async function fetchJobsFromSupabase(): Promise<Job[]> {
+  if (!isSupabaseConfigured() || !supabase) return getStoredJobs();
+
+  try {
+    const { data, error } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
+    
+    if (error) {
+      if (error.message.includes('Could not find the table') || error.message.includes('schema cache')) {
+        isSupabaseSchemaMissing = true;
+        console.warn('JobsHub Supabase Notice: Database tables not found. Please run supabase_schema.sql in Supabase SQL Editor.');
+      } else {
+        console.error('Error fetching jobs from Supabase:', error.message);
+      }
+      return getStoredJobs();
+    }
+
+    isSupabaseSchemaMissing = false;
+    if (!data || data.length === 0) {
+      // Seed default jobs into Supabase
+      console.log('Seeding initial jobs to Supabase database...');
+      const rowsToInsert = MOCK_JOBS.map((j) => mapJobToDbRow(j));
+      await supabase.from('jobs').insert(rowsToInsert);
+      return MOCK_JOBS;
+    }
+
+    const loaded = data.map(mapDbJobToJob);
+    saveJobsLocally(loaded);
+    return loaded;
+  } catch (err) {
+    console.error('Exception fetching jobs from Supabase:', err);
+    return getStoredJobs();
+  }
+}
+
+export function saveJobs(jobs: Job[]): void {
+  saveJobsLocally(jobs);
+}
+
+export async function addJob(jobData: Omit<Job, 'id'>): Promise<Job> {
   const jobs = getStoredJobs();
-  const id = `jh-${jobData.categorySlug || 'custom'}-${Date.now()}`;
-  const newJob: Job = { ...jobData, id };
+  const tempId = `jh-${jobData.categorySlug || 'custom'}-${Date.now()}`;
+  const newJob: Job = { ...jobData, id: tempId };
+  
+  // Save locally immediately
   const updated = [newJob, ...jobs];
-  saveJobs(updated);
+  saveJobsLocally(updated);
+
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      const dbRow = mapJobToDbRow(newJob);
+      const { data, error } = await supabase.from('jobs').insert([dbRow]).select().single();
+      if (!error && data) {
+        const createdFromDb = mapDbJobToJob(data);
+        const replaced = updated.map((j) => (j.id === tempId ? createdFromDb : j));
+        saveJobsLocally(replaced);
+        return createdFromDb;
+      }
+    } catch (err) {
+      console.error('Error inserting job into Supabase:', err);
+    }
+  }
+
   return newJob;
 }
 
-export function updateJob(updatedJob: Job): void {
+export async function updateJob(updatedJob: Job): Promise<void> {
   const jobs = getStoredJobs();
   const index = jobs.findIndex((j) => j.id === updatedJob.id);
   if (index !== -1) {
     jobs[index] = updatedJob;
-    saveJobs(jobs);
+    saveJobsLocally(jobs);
+  }
+
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      const dbRow = mapJobToDbRow(updatedJob);
+      await supabase.from('jobs').update(dbRow).eq('id', updatedJob.id);
+    } catch (err) {
+      console.error('Error updating job in Supabase:', err);
+    }
   }
 }
 
-export function deleteJob(jobId: string): void {
+export async function deleteJob(jobId: string): Promise<void> {
   const jobs = getStoredJobs();
   const updated = jobs.filter((j) => j.id !== jobId);
-  saveJobs(updated);
+  saveJobsLocally(updated);
+
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      await supabase.from('jobs').delete().eq('id', jobId);
+    } catch (err) {
+      console.error('Error deleting job from Supabase:', err);
+    }
+  }
 }
 
-// --- APPLICATIONS DATA STORE ---
+// --- APPLICATIONS STORE ---
+
 export function getStoredApplications(): ApplicationRecord[] {
   if (typeof window === 'undefined') return INITIAL_APPLICATIONS;
   try {
@@ -253,12 +362,11 @@ export function getStoredApplications(): ApplicationRecord[] {
   } catch (err) {
     console.error('Error loading applications from localStorage:', err);
   }
-  // Initialize with INITIAL_APPLICATIONS if missing
   localStorage.setItem(APPS_STORAGE_KEY, JSON.stringify(INITIAL_APPLICATIONS));
   return INITIAL_APPLICATIONS;
 }
 
-export function saveApplications(apps: ApplicationRecord[]): void {
+export function saveApplicationsLocally(apps: ApplicationRecord[]): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(APPS_STORAGE_KEY, JSON.stringify(apps));
@@ -268,24 +376,125 @@ export function saveApplications(apps: ApplicationRecord[]): void {
   }
 }
 
-export function addApplication(appData: Omit<ApplicationRecord, 'id' | 'status'> & { status?: ApplicationStatus }): ApplicationRecord {
-  const apps = getStoredApplications();
+export async function fetchApplicationsFromSupabase(): Promise<ApplicationRecord[]> {
+  if (!isSupabaseConfigured() || !supabase) return getStoredApplications();
+
+  try {
+    const { data, error } = await supabase.from('applications').select('*').order('created_at', { ascending: false });
+
+    if (error) {
+      if (error.message.includes('Could not find the table') || error.message.includes('schema cache')) {
+        isSupabaseSchemaMissing = true;
+      } else {
+        console.error('Error fetching applications from Supabase:', error.message);
+      }
+      return getStoredApplications();
+    }
+
+    if (!data || data.length === 0) {
+      // Seed default applications into Supabase
+      console.log('Seeding initial applications to Supabase database...');
+      const rowsToInsert = INITIAL_APPLICATIONS.map((a) => mapAppToDbRow(a));
+      await supabase.from('applications').insert(rowsToInsert);
+      return INITIAL_APPLICATIONS;
+    }
+
+    const loaded = data.map(mapDbAppToApp);
+    saveApplicationsLocally(loaded);
+    return loaded;
+  } catch (err) {
+    console.error('Exception fetching applications from Supabase:', err);
+    return getStoredApplications();
+  }
+}
+
+export function saveApplications(apps: ApplicationRecord[]): void {
+  saveApplicationsLocally(apps);
+}
+
+export async function addApplication(
+  appData: Omit<ApplicationRecord, 'id' | 'status'> & { status?: ApplicationStatus }
+): Promise<ApplicationRecord> {
+  const trackingId = appData.trackingId || `JH-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+  const tempId = `app-${Date.now()}`;
+
+  let cnicFrontUrl = appData.cnicFrontPreview;
+  let cnicBackUrl = appData.cnicBackPreview;
+  let paymentProofUrl = appData.paymentProofPreview;
+
+  // If Supabase is configured, upload documents to Supabase Storage buckets
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      if (appData.cnicFrontPreview) {
+        const uploaded = await uploadImageToSupabaseStorage(
+          appData.cnicFrontPreview,
+          'cnic-documents',
+          `cnic_front_${trackingId}`
+        );
+        if (uploaded) cnicFrontUrl = uploaded;
+      }
+
+      if (appData.cnicBackPreview) {
+        const uploaded = await uploadImageToSupabaseStorage(
+          appData.cnicBackPreview,
+          'cnic-documents',
+          `cnic_back_${trackingId}`
+        );
+        if (uploaded) cnicBackUrl = uploaded;
+      }
+
+      if (appData.paymentProofPreview) {
+        const uploaded = await uploadImageToSupabaseStorage(
+          appData.paymentProofPreview,
+          'payment-proofs',
+          `payment_${trackingId}`
+        );
+        if (uploaded) paymentProofUrl = uploaded;
+      }
+    } catch (err) {
+      console.error('Error uploading application documents to Supabase storage:', err);
+    }
+  }
+
   const newApp: ApplicationRecord = {
     ...appData,
-    id: `app-${Date.now()}`,
+    id: tempId,
+    trackingId,
     status: appData.status || 'Pending',
+    cnicFrontPreview: cnicFrontUrl,
+    cnicBackPreview: cnicBackUrl,
+    paymentProofPreview: paymentProofUrl,
   };
-  const updated = [newApp, ...apps];
-  saveApplications(updated);
+
+  const currentApps = getStoredApplications();
+  const updated = [newApp, ...currentApps];
+  saveApplicationsLocally(updated);
+
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      const dbRow = mapAppToDbRow(newApp);
+      const { data, error } = await supabase.from('applications').insert([dbRow]).select().single();
+
+      if (!error && data) {
+        const createdFromDb = mapDbAppToApp(data);
+        const replaced = updated.map((a) => (a.id === tempId ? createdFromDb : a));
+        saveApplicationsLocally(replaced);
+        return createdFromDb;
+      }
+    } catch (err) {
+      console.error('Error inserting application into Supabase database:', err);
+    }
+  }
+
   return newApp;
 }
 
-export function updateApplicationStatus(
-  id: string, 
-  status: ApplicationStatus, 
-  rejectionReason?: string, 
+export async function updateApplicationStatus(
+  id: string,
+  status: ApplicationStatus,
+  rejectionReason?: string,
   adminNotes?: string
-): void {
+): Promise<void> {
   const apps = getStoredApplications();
   const index = apps.findIndex((a) => a.id === id);
   if (index !== -1) {
@@ -295,20 +504,37 @@ export function updateApplicationStatus(
       ...(rejectionReason !== undefined ? { rejectionReason } : {}),
       ...(adminNotes !== undefined ? { adminNotes } : {}),
     };
-    saveApplications(apps);
+    saveApplicationsLocally(apps);
+  }
+
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      const payload: any = { status };
+      if (rejectionReason !== undefined) payload.rejection_reason = rejectionReason;
+      if (adminNotes !== undefined) payload.admin_notes = adminNotes;
+
+      await supabase.from('applications').update(payload).eq('id', id);
+    } catch (err) {
+      console.error('Error updating application status in Supabase:', err);
+    }
   }
 }
 
-export function deleteApplication(id: string): void {
+export async function deleteApplication(id: string): Promise<void> {
   const apps = getStoredApplications();
   const updated = apps.filter((a) => a.id !== id);
-  saveApplications(updated);
+  saveApplicationsLocally(updated);
+
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      await supabase.from('applications').delete().eq('id', id);
+    } catch (err) {
+      console.error('Error deleting application from Supabase:', err);
+    }
+  }
 }
 
 // --- ADMIN SESSION & CREDENTIALS STORE ---
-const ADMIN_CREDS_STORAGE_KEY = 'jobshub_admin_creds_v3';
-const DEFAULT_ADMIN_USERNAME = 'umar';
-const DEFAULT_ADMIN_PASSWORD = 'Sho2026@';
 
 export interface AdminCredentials {
   username: string;
@@ -338,6 +564,30 @@ export async function getAdminCredentials(): Promise<AdminCredentials> {
     username: DEFAULT_ADMIN_USERNAME,
     passwordHash: defaultHash,
   };
+
+  // Try fetching from Supabase if configured
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      const { data, error } = await supabase.from('admin_credentials').select('*').eq('id', 1).maybeSingle();
+      if (!error && data) {
+        const fetched = {
+          username: data.username || DEFAULT_ADMIN_USERNAME,
+          passwordHash: data.password_hash || defaultHash,
+        };
+        localStorage.setItem(ADMIN_CREDS_STORAGE_KEY, JSON.stringify(fetched));
+        return fetched;
+      } else if (!data) {
+        // Seed initial admin credentials in Supabase
+        await supabase.from('admin_credentials').upsert({
+          id: 1,
+          username: DEFAULT_ADMIN_USERNAME,
+          password_hash: defaultHash,
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching admin credentials from Supabase:', err);
+    }
+  }
 
   if (typeof window === 'undefined') return defaultCreds;
 
@@ -403,10 +653,25 @@ export async function updateAdminCredentials(
 
   try {
     localStorage.setItem(ADMIN_CREDS_STORAGE_KEY, JSON.stringify(updatedCreds));
+
+    if (isSupabaseConfigured() && supabase) {
+      await supabase.from('admin_credentials').upsert({
+        id: 1,
+        username: updatedCreds.username,
+        password_hash: updatedCreds.passwordHash,
+        updated_at: new Date().toISOString(),
+      });
+      await supabase.from('admin_users').upsert({
+        username: updatedCreds.username,
+        password_hash: updatedCreds.passwordHash,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'username' });
+    }
+
     notifyDataChanged();
     return {
       success: true,
-      message: 'Admin account credentials updated successfully! Old credentials will no longer work.',
+      message: 'Admin account credentials updated successfully! Changes persisted in database.',
     };
   } catch (err) {
     console.error('Error saving updated admin credentials:', err);
@@ -433,6 +698,7 @@ export function setAdminLoggedIn(status: boolean): void {
 }
 
 // --- ADMIN SETTINGS STORE ---
+
 export function getStoredSettings(): SiteSettings {
   if (typeof window === 'undefined') return DEFAULT_SITE_SETTINGS;
   try {
@@ -458,13 +724,93 @@ export function getStoredSettings(): SiteSettings {
   return DEFAULT_SITE_SETTINGS;
 }
 
-export function saveSettings(settings: SiteSettings): void {
+export async function fetchSettingsFromSupabase(): Promise<SiteSettings> {
+  if (!isSupabaseConfigured() || !supabase) return getStoredSettings();
+
+  try {
+    const { data, error } = await supabase.from('site_settings').select('*').eq('id', 1).maybeSingle();
+    if (error) {
+      if (error.message.includes('Could not find the table') || error.message.includes('schema cache')) {
+        isSupabaseSchemaMissing = true;
+      } else {
+        console.error('Error fetching site_settings from Supabase:', error.message);
+      }
+      return getStoredSettings();
+    }
+
+    if (data) {
+      const loaded: SiteSettings = {
+        websiteName: data.website_name || DEFAULT_SITE_SETTINGS.websiteName,
+        whatsappNumber: data.whatsapp_number || DEFAULT_SITE_SETTINGS.whatsappNumber,
+        jazzCashAccountName: data.jazz_cash_account_name || data.jazzcash_name || DEFAULT_SITE_SETTINGS.jazzCashAccountName,
+        jazzCashAccountNumber: data.jazz_cash_account_number || data.jazzcash_number || DEFAULT_SITE_SETTINGS.jazzCashAccountNumber,
+        easyPaisaAccountName: data.easy_paisa_account_name || data.easypaisa_name || DEFAULT_SITE_SETTINGS.easyPaisaAccountName,
+        easyPaisaAccountNumber: data.easy_paisa_account_number || data.easypaisa_number || DEFAULT_SITE_SETTINGS.easyPaisaAccountNumber,
+        applicationFee: Number(data.application_fee) || DEFAULT_SITE_SETTINGS.applicationFee,
+      };
+      saveSettingsLocally(loaded);
+      return loaded;
+    } else {
+      // Seed initial settings
+      await supabase.from('site_settings').upsert({
+        id: 1,
+        website_name: DEFAULT_SITE_SETTINGS.websiteName,
+        whatsapp_number: DEFAULT_SITE_SETTINGS.whatsappNumber,
+        whatsapp_link: `https://wa.me/${(DEFAULT_SITE_SETTINGS.whatsappNumber || '').replace(/\D/g, '')}`,
+        jazzcash_name: DEFAULT_SITE_SETTINGS.jazzCashAccountName,
+        jazzcash_number: DEFAULT_SITE_SETTINGS.jazzCashAccountNumber,
+        jazz_cash_account_name: DEFAULT_SITE_SETTINGS.jazzCashAccountName,
+        jazz_cash_account_number: DEFAULT_SITE_SETTINGS.jazzCashAccountNumber,
+        easypaisa_name: DEFAULT_SITE_SETTINGS.easyPaisaAccountName,
+        easypaisa_number: DEFAULT_SITE_SETTINGS.easyPaisaAccountNumber,
+        easy_paisa_account_name: DEFAULT_SITE_SETTINGS.easyPaisaAccountName,
+        easy_paisa_account_number: DEFAULT_SITE_SETTINGS.easyPaisaAccountNumber,
+        application_fee: DEFAULT_SITE_SETTINGS.applicationFee,
+        contact_email: 'info@jobshub.pk',
+        website_address: 'JobsHub HQ, Blue Area, Islamabad',
+      });
+      return DEFAULT_SITE_SETTINGS;
+    }
+  } catch (err) {
+    console.error('Exception fetching settings from Supabase:', err);
+    return getStoredSettings();
+  }
+}
+
+export function saveSettingsLocally(settings: SiteSettings): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     notifyDataChanged();
   } catch (err) {
     console.error('Error saving settings to localStorage:', err);
+  }
+}
+
+export async function saveSettings(settings: SiteSettings): Promise<void> {
+  saveSettingsLocally(settings);
+
+  if (isSupabaseConfigured() && supabase) {
+    try {
+      await supabase.from('site_settings').upsert({
+        id: 1,
+        website_name: settings.websiteName,
+        whatsapp_number: settings.whatsappNumber,
+        whatsapp_link: `https://wa.me/${(settings.whatsappNumber || '').replace(/\D/g, '')}`,
+        jazzcash_name: settings.jazzCashAccountName,
+        jazzcash_number: settings.jazzCashAccountNumber,
+        jazz_cash_account_name: settings.jazzCashAccountName,
+        jazz_cash_account_number: settings.jazzCashAccountNumber,
+        easypaisa_name: settings.easyPaisaAccountName,
+        easypaisa_number: settings.easyPaisaAccountNumber,
+        easy_paisa_account_name: settings.easyPaisaAccountName,
+        easy_paisa_account_number: settings.easyPaisaAccountNumber,
+        application_fee: settings.applicationFee,
+        updated_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error('Error saving site_settings to Supabase:', err);
+    }
   }
 }
 
@@ -488,3 +834,18 @@ export function formatPhoneDisplay(whatsappNumber: string): string {
   return whatsappNumber || '03477957267';
 }
 
+// Automatically sync store with Supabase on module import
+export async function syncStoreWithSupabase(): Promise<void> {
+  if (isSupabaseConfigured()) {
+    await Promise.all([
+      fetchJobsFromSupabase(),
+      fetchApplicationsFromSupabase(),
+      fetchSettingsFromSupabase(),
+      getAdminCredentials(),
+    ]);
+  }
+}
+
+if (typeof window !== 'undefined') {
+  syncStoreWithSupabase();
+}
